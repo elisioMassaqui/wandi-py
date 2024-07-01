@@ -1,0 +1,75 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monaco Editor com Flask</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.21.2/min/vs/editor/editor.main.min.css">
+    <style>
+        body { background-color: #1e1e1e; color: #d4d4d4; margin: 0; }
+        .editor-container { height: 100vh; display: flex; flex-direction: column; }
+        .monaco-editor { flex: 1; }
+        .button-container { margin-top: 10px; }
+        .button-container button { margin-right: 10px; }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.21.2/min/vs/loader.min.js"></script>
+    <script>
+        let editor;
+
+        require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.21.2/min/vs' }});
+
+        require(['vs/editor/editor.main'], function() {
+            editor = monaco.editor.create(document.getElementById('editor'), {
+                value: `void setup() {\n    // setup code here\n}\n\nvoid loop() {\n    // main code here\n}`,
+                language: 'cpp',
+                theme: 'vs-dark'
+            });
+        });
+
+        function saveFile() {
+            const code = editor.getValue();
+
+            // Envia o código para o Flask salvar
+            fetch('/save', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `code=${encodeURIComponent(code)}`,
+            }).then(response => response.text())
+              .then(message => {
+                  alert(message); // Exibe a mensagem retornada pelo Flask
+              })
+              .catch(error => {
+                  console.error('Erro ao salvar o arquivo:', error);
+              });
+        }
+
+        function openFile(event) {
+            const input = event.target;
+            const file = input.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function() {
+                const fileContent = reader.result;
+
+                // Define o conteúdo do editor com o conteúdo do arquivo aberto
+                editor.setValue(fileContent);
+            };
+
+            // Lê o arquivo como texto
+            reader.readAsText(file);
+        }
+    </script>
+</head>
+<body>
+    <div class="editor-container">
+        <div id="editor" class="monaco-editor"></div>
+        <div class="button-container">
+            <button onclick="saveFile()">Salvar</button>
+            <input type="file" id="fileInput" accept=".ino" webkitdirectory directory onchange="openFile(event)">
+        </div>
+    </div>
+</body>
+</html>
